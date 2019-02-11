@@ -1,5 +1,6 @@
 package br.bombark.kissue
 
+import android.content.Context
 import android.support.design.widget.Snackbar
 import android.support.v7.app.AppCompatActivity
 
@@ -18,6 +19,11 @@ import android.view.ViewGroup
 import kotlinx.android.synthetic.main.act_issue.*
 import kotlinx.android.synthetic.main.formulario.view.*
 import java.io.File
+import org.yaml.snakeyaml.Yaml
+import android.widget.AdapterView.OnItemSelectedListener
+import android.widget.EditText
+import android.widget.LinearLayout
+import android.widget.TextView
 
 
 class ActIssue : AppCompatActivity() {
@@ -31,17 +37,14 @@ class ActIssue : AppCompatActivity() {
      * [android.support.v4.app.FragmentStatePagerAdapter].
      */
     private var mSectionsPagerAdapter: SectionsPagerAdapter? = null
+    private var form : ArrayList< Any > = ArrayList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.act_issue)
 
         setSupportActionBar(toolbar)
-        // Create the adapter that will return a fragment for each of the three
-        // primary sections of the activity.
         mSectionsPagerAdapter = SectionsPagerAdapter(supportFragmentManager)
-
-        // Set up the ViewPager with the sections adapter.
         container.adapter = mSectionsPagerAdapter
 
         fab.setOnClickListener { view ->
@@ -49,38 +52,32 @@ class ActIssue : AppCompatActivity() {
                 .setAction("Action", null).show()
         }
 
-
-
-
-        /* Carrega o arquivo form.json
-        `is`.read(buffer)
-        `is`.close()
-        val json_raw = String(buffer, textformatting)*/
-
-
-
-
     }
 
+    override fun onPause() {
+        super.onPause();
+        Log.i("opa", "oaaaappaaaaa")
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        Log.i("opa", "oaaaappaaaaa")
+        super.onSaveInstanceState(outState)
+        outState.putInt("value", 10)
+    }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        // Inflate the menu; this adds items to the action bar if it is present.
         menuInflater.inflate(R.menu.menu_act_issue, menu)
         return true
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
         val id = item.itemId
-
         if (id == R.id.action_settings) {
             return true
         }
-
         return super.onOptionsItemSelected(item)
     }
+
 
 
     /**
@@ -89,16 +86,39 @@ class ActIssue : AppCompatActivity() {
      */
     inner class SectionsPagerAdapter(fm: FragmentManager) : FragmentPagerAdapter(fm) {
 
-        override fun getItem(position: Int): Fragment {
-            // getItem is called to instantiate the fragment for the given page.
-            // Return a PlaceholderFragment (defined as a static inner class below).
-            return PlaceholderFragment.newInstance(position + 1)
+        private var form : ArrayList< Any > = ArrayList()
+
+        init {
+            var raw = File("/sdcard/form_cini.yml").readBytes().toString(Charsets.UTF_8)
+            val yaml = Yaml()
+            this.form = yaml.load(raw)
         }
 
-        override fun getCount(): Int {
-            return 5
+        override fun getItem(position: Int): Fragment {
+            val f1 = PlaceholderFragment.newInstance(position + 1)
+            val question = this.getQuestion(position)
+            val args1 = Bundle()
+            args1.putInt   ( "page_id", position+1 )
+            args1.putString( "class", question["class"].toString() )
+            args1.putString( "title", question["title"].toString() )
+            f1.setArguments(args1)
+            return f1
         }
+
+
+
+
+        override fun getCount(): Int {
+            return this.form.size
+        }
+
+        fun getQuestion(i:Int) : LinkedHashMap<String,Any> {
+            return this.form[i] as LinkedHashMap<String,Any>
+        }
+
     }
+
+
 
     /**
      * A placeholder fragment containing a simple view.
@@ -111,40 +131,39 @@ class ActIssue : AppCompatActivity() {
             inflater: LayoutInflater, container: ViewGroup?,
             savedInstanceState: Bundle?
         ): View? {
-            val rootView = inflater.inflate(R.layout.formulario, container, false)
+            val rootView = inflater.inflate(R.layout.formulario, container, false) as ViewGroup
 
-            val page_id = arguments?.getInt(ARG_SECTION_NUMBER)
+            val act = this.activity as ActIssue;
+            val page_id = arguments?.getInt("page_id")
+            val klass   = arguments?.getString("class")
+            val title   = arguments?.getString("title")
 
-            val json_fd = File("/sdcard/form_cini.json")
-            val stream = json_fd.inputStream();
-            val size   = stream.available();
-            val buffer = ByteArray(size)
-            stream.read(buffer)
-            stream.close()
-
-            var json_raw = String(buffer, Charsets.UTF_8 )
+            //val text = page_id.toString() + ". " + title
+            //rootView.section_label.text = text//getString(R.string.section_format, arguments?.getInt(ARG_SECTION_NUMBER))
 
 
+            val lbl_title = TextView(act)
+            lbl_title.text = page_id.toString() + ". " + title
+            //lbl_title.setPadding(0,0,0,0)
+            val edit_answer = EditText( act )
 
-            var text = "felipe"
-            when {
-                page_id == 1 -> text = "aaa"
-                page_id == 2 -> text = json_raw
-                page_id == 3 -> text = "ccc"
-            }
 
-            /*if ( page_id == 3 ) {
-                this.json_raw = File("form_cini.json").readText(Charsets.UTF_8)
-            } else if ( page_id == 4 ){
-                Log.e("teste",this.json_raw)
-            }*/
+            val ll = LinearLayout( act )
+            ll.setPadding(10,10,10,10)
+            ll.orientation = LinearLayout.VERTICAL
 
-            rootView.section_label.text = text//getString(R.string.section_format, arguments?.getInt(ARG_SECTION_NUMBER))
+            ll.addView(lbl_title)
+            ll.addView(edit_answer)
+            rootView.addView(ll)
 
             return rootView
 
 
         }
+
+
+
+
 
         companion object {
             /**
