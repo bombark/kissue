@@ -23,6 +23,7 @@ import android.widget.RadioGroup
 import android.widget.RadioButton
 import android.widget.CheckBox
 import android.widget.LinearLayout
+import android.content.res.AssetManager
 
 
 import java.io.IOException
@@ -95,7 +96,10 @@ class ActIssue : AppCompatActivity() {
 		private var issuepkg : ArrayList< Issue? > = ArrayList()
 
 		init {
-			var raw = File("/sdcard/form_cini.yml").readBytes().toString(Charsets.UTF_8)
+			val manager = getAssets();
+			val ims = manager.open("form.yml");
+			val raw = ims.readBytes().toString(Charsets.UTF_8)
+			//var raw = File("/sdcard/form_cini.yml").readBytes().toString(Charsets.UTF_8)
 			val yaml = Yaml()
 			this.form = yaml.load(raw)
 
@@ -240,14 +244,26 @@ class ActIssue : AppCompatActivity() {
 			inflater: LayoutInflater, container: ViewGroup?,
 			savedInstanceState: Bundle?
 		): View? {
-			val rootView = inflater.inflate(R.layout.issue_bool, container, false) as ViewGroup
-			val v_title:TextView = rootView.findViewById(R.id.title);
+			if ( this.is_started ){
+				return this.v_root
+			}
+
+			this.v_root = inflater.inflate(R.layout.issue_bool, container, false) as ViewGroup
+			val v_title:TextView = this.v_root.findViewById(R.id.title);
 			v_title.text = this.issue_id.toString() + ". " + title
-			return rootView
+
+			this.is_started = true
+			return this.v_root
 		}
 
 		override fun getAnswer():String {
-			return "enun"
+			val radio_sim = this.v_root.findViewById(R.id.radio_sim) as RadioButton;
+			if ( radio_sim.isChecked() )
+				return "sim"
+			val radio_nao = this.v_root.findViewById(R.id.radio_nao) as RadioButton;
+			if ( radio_nao.isChecked() )
+				return "nao"
+			return ""
 		}
 	}
 

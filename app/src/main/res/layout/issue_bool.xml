@@ -23,11 +23,11 @@
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content"
 			android:orientation="horizontal">
-			<RadioButton android:id="@+id/radio_pirates"
+			<RadioButton android:id="@+id/radio_sim"
 				android:layout_width="wrap_content"
 				android:layout_height="wrap_content"
 				android:text="Sim"/>
-			<RadioButton android:id="@+id/radio_ninjas"
+			<RadioButton android:id="@+id/radio_nao"
 				android:layout_width="wrap_content"
 				android:layout_height="wrap_content"
 				android:text="Não" />
