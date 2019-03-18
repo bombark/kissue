@@ -1,5 +1,6 @@
 ---
-- title: Qual seu nome?
+- class: text
+  title: Qual seu nome?
 - class: Date
   title: Qual sua data de nascimento?
 - class: Enum
@@ -284,4 +285,3 @@
   - title: Mais matutino que vespertino
   - title: Mais vespertino que matutino
   - title: Tipo vespertino
-

@@ -37,6 +37,9 @@ import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 import org.xmlpull.v1.XmlPullParserFactory;
 
+import java.math.BigInteger
+import java.security.MessageDigest
+
 
 
 class ActIssue : AppCompatActivity() {
@@ -94,6 +97,7 @@ class ActIssue : AppCompatActivity() {
 
 		private var form : ArrayList< Any > = ArrayList()
 		private var issuepkg : ArrayList< Issue? > = ArrayList()
+		private var form_md5 = ""
 
 		init {
 			val manager = getAssets();
@@ -102,6 +106,9 @@ class ActIssue : AppCompatActivity() {
 			//var raw = File("/sdcard/form_cini.yml").readBytes().toString(Charsets.UTF_8)
 			val yaml = Yaml()
 			this.form = yaml.load(raw)
+
+			this.form_md5 = calcMd5(raw)
+			Log.i("opa",this.form_md5)
 
 			for (i in 0..this.form.size){
 				issuepkg.add(null)
@@ -154,17 +161,39 @@ class ActIssue : AppCompatActivity() {
 		}
 
 		fun check() : Boolean {
+			Log.i("opa", this.issuepkg.size.toString())
 			for ( issue in this.issuepkg ){
 				val answer = issue?.getAnswer() ?: ""
-				if (answer == ""){
-					return false
-				}
+				Log.i("opa", answer)
 			}
+			Log.i("opa","fim")
 			return true
 		}
 
+		fun getAnswer() : String {
+			var res = ""
+			var is_first = true
+			for ( issue in this.issuepkg ){
+				val answer = issue?.getAnswer() ?: ""
+				if ( is_first ){
+					is_first = false
+				} else {
+					res += ';'
+				}
+				res += answer
+			}
+			return res
+		}
+
 		fun save() {
+			val linha = this.getAnswer()
+			Log.i("opa",linha)
 			Log.i("opa","salvando!!!!!")
+
+			val results = File("/sdcard/br.fgbombardelli.ktissue/results")
+			results.mkdirs()
+
+			File(results, "form-"+this.form_md5+".csv" ).appendText(linha)
 		}
 
 		/*public CharSequence getPageTitle(int position) {
@@ -299,7 +328,12 @@ class ActIssue : AppCompatActivity() {
 		}
 
 		override fun getAnswer():String {
-			return "enun"
+			for (radio in this.answer){
+				if ( radio.isChecked() ){
+					return radio.text.toString()
+				}
+			}
+			return ""
 		}
 	}
 
@@ -338,7 +372,19 @@ class ActIssue : AppCompatActivity() {
 
 
 		override fun getAnswer():String {
-			return "checkbox"
+			var is_first = true
+			var res = ""
+			for (check in this.answer){
+				if ( check.isChecked() ){
+					if ( is_first ){
+						is_first = false
+					} else {
+						res += ","
+					}
+					res += check.text.toString()
+				}
+			}
+			return res
 		}
 	}
 
@@ -357,6 +403,12 @@ class ActIssue : AppCompatActivity() {
 
 	}
 
+
+
+	fun calcMd5(data:String): String {
+		val md = MessageDigest.getInstance("MD5")
+		return BigInteger(1, md.digest(data.toByteArray())).toString(16).padStart(32, '0')
+	}
 }
 
 
