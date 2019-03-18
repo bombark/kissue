@@ -1,13 +1,10 @@
 package br.bombark.kissue
 
-import android.content.Context
-import android.support.design.widget.Snackbar
 import android.support.v7.app.AppCompatActivity
 
 import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentManager
 import android.support.v4.app.FragmentPagerAdapter
-import android.support.v4.view.ViewPager
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -17,172 +14,346 @@ import android.view.View
 import android.view.ViewGroup
 
 import kotlinx.android.synthetic.main.act_issue.*
-import kotlinx.android.synthetic.main.formulario.view.*
 import java.io.File
 import org.yaml.snakeyaml.Yaml
-import android.widget.AdapterView.OnItemSelectedListener
 import android.widget.EditText
-import android.widget.LinearLayout
 import android.widget.TextView
+import android.text.InputType
+import android.widget.RadioGroup
+import android.widget.RadioButton
+import android.widget.CheckBox
+import android.widget.LinearLayout
+
+
+import java.io.IOException
+import java.io.StringReader
+import java.io.InputStream
+import java.io.ByteArrayInputStream
+
+
+
+import org.xmlpull.v1.XmlPullParser;
+import org.xmlpull.v1.XmlPullParserException;
+import org.xmlpull.v1.XmlPullParserFactory;
+
 
 
 class ActIssue : AppCompatActivity() {
 
-    /**
-     * The [android.support.v4.view.PagerAdapter] that will provide
-     * fragments for each of the sections. We use a
-     * {@link FragmentPagerAdapter} derivative, which will keep every
-     * loaded fragment in memory. If this becomes too memory intensive, it
-     * may be best to switch to a
-     * [android.support.v4.app.FragmentStatePagerAdapter].
-     */
-    private var mSectionsPagerAdapter: SectionsPagerAdapter? = null
-    private var form : ArrayList< Any > = ArrayList()
+	/**
+	 * The [android.support.v4.view.PagerAdapter] that will provide
+	 * fragments for each of the sections. We use a
+	 * {@link FragmentPagerAdapter} derivative, which will keep every
+	 * loaded fragment in memory. If this becomes too memory intensive, it
+	 * may be best to switch to a
+	 * [android.support.v4.app.FragmentStatePagerAdapter].
+	 */
+	private lateinit var section: SectionsPagerAdapter
+	private var form : ArrayList< Any > = ArrayList()
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.act_issue)
+	override fun onCreate(savedInstanceState: Bundle?) {
+		super.onCreate(savedInstanceState)
+		setContentView(R.layout.act_issue)
 
-        setSupportActionBar(toolbar)
-        mSectionsPagerAdapter = SectionsPagerAdapter(supportFragmentManager)
-        container.adapter = mSectionsPagerAdapter
+		setSupportActionBar(toolbar)
+		this.section = SectionsPagerAdapter(supportFragmentManager)
+		container.adapter = this.section
 
-        fab.setOnClickListener { view ->
-            Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                .setAction("Action", null).show()
-        }
+		fab.setOnClickListener { //view ->
+			//this.section.setCurrentItem(0);
+			if ( this.section.check() )
+				this.section.save()
+			//Snackbar.make(view, "Obrigado!", Snackbar.LENGTH_LONG).setAction("Action", null).show()
+		}
 
-    }
+	}
 
-    override fun onPause() {
-        super.onPause();
-        Log.i("opa", "oaaaappaaaaa")
-    }
 
-    override fun onSaveInstanceState(outState: Bundle) {
-        Log.i("opa", "oaaaappaaaaa")
-        super.onSaveInstanceState(outState)
-        outState.putInt("value", 10)
-    }
+	override fun onCreateOptionsMenu(menu: Menu): Boolean {
+		menuInflater.inflate(R.menu.menu_act_issue, menu)
+		return true
+	}
 
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.menu_act_issue, menu)
-        return true
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        val id = item.itemId
-        if (id == R.id.action_settings) {
-            return true
-        }
-        return super.onOptionsItemSelected(item)
-    }
+	override fun onOptionsItemSelected(item: MenuItem): Boolean {
+		val id = item.itemId
+		if (id == R.id.action_settings) {
+			this.finish()
+			return true
+		}
+		return super.onOptionsItemSelected(item)
+	}
 
 
 
-    /**
-     * A [FragmentPagerAdapter] that returns a fragment corresponding to
-     * one of the sections/tabs/pages.
-     */
-    inner class SectionsPagerAdapter(fm: FragmentManager) : FragmentPagerAdapter(fm) {
+	/**
+	 * A [FragmentPagerAdapter] that returns a fragment corresponding to
+	 * one of the sections/tabs/pages.
+	 */
+	inner class SectionsPagerAdapter(fm: FragmentManager) : FragmentPagerAdapter(fm) {
 
-        private var form : ArrayList< Any > = ArrayList()
+		private var form : ArrayList< Any > = ArrayList()
+		private var issuepkg : ArrayList< Issue? > = ArrayList()
 
-        init {
-            var raw = File("/sdcard/form_cini.yml").readBytes().toString(Charsets.UTF_8)
-            val yaml = Yaml()
-            this.form = yaml.load(raw)
-        }
+		init {
+			var raw = File("/sdcard/form_cini.yml").readBytes().toString(Charsets.UTF_8)
+			val yaml = Yaml()
+			this.form = yaml.load(raw)
 
-        override fun getItem(position: Int): Fragment {
-            val f1 = PlaceholderFragment.newInstance(position + 1)
-            val question = this.getQuestion(position)
-            val args1 = Bundle()
-            args1.putInt   ( "page_id", position+1 )
-            args1.putString( "class", question["class"].toString() )
-            args1.putString( "title", question["title"].toString() )
-            f1.setArguments(args1)
-            return f1
-        }
+			for (i in 0..this.form.size){
+				issuepkg.add(null)
+			}
+		}
 
+		override fun getItem(id_issue: Int): Fragment {
+			//IssueText.newInstance(position + 1)
+			val question = this.getQuestion(id_issue)
+			val klass = question["class"].toString().toLowerCase()
 
+			/*val args1 = Bundle()
+			args1.putInt   ( "id", position )
+			args1.putString( "class", klass )
+			args1.putString( "title", question["title"].toString() )*/
 
+			if ( klass == "text" || klass == "int" || klass == "date" ) {
+				val f1 = IssueText(id_issue, question); //f1.setArguments(args1)
+				issuepkg[id_issue] = f1
+				return f1
 
-        override fun getCount(): Int {
-            return this.form.size
-        }
+			} else if ( klass == "boolean" ){
+				val f1 = IssueBool(id_issue, question); //f1.setArguments(args1)
+				issuepkg[id_issue] = f1
+				return f1
 
-        fun getQuestion(i:Int) : LinkedHashMap<String,Any> {
-            return this.form[i] as LinkedHashMap<String,Any>
-        }
+			} else if ( klass == "enum" ){
+				val f1 = IssueEnum(id_issue, question); //f1.setArguments(args1)
+				issuepkg[id_issue] = f1
+				return f1
 
-    }
+			} else if ( klass == "checkbox" ){
+				val f1 = IssueCheckbox(id_issue, question); //f1.setArguments(args1)
+				issuepkg[id_issue] = f1
+				return f1
 
+			} else {
+				val f1 = IssueError(id_issue, question); //f1.setArguments(args1)
+				issuepkg[id_issue] = f1
+				return f1
+			}
+		}
 
+		override fun getCount(): Int {
+			return this.form.size
+		}
 
-    /**
-     * A placeholder fragment containing a simple view.
-     */
-    class PlaceholderFragment : Fragment() {
+		fun getQuestion(i:Int) : LinkedHashMap<String,Any> {
+			return this.form[i] as LinkedHashMap<String,Any>
+		}
 
-        var json_raw = ""
+		fun check() : Boolean {
+			for ( issue in this.issuepkg ){
+				val answer = issue?.getAnswer() ?: ""
+				if (answer == ""){
+					return false
+				}
+			}
+			return true
+		}
 
-        override fun onCreateView(
-            inflater: LayoutInflater, container: ViewGroup?,
-            savedInstanceState: Bundle?
-        ): View? {
-            val rootView = inflater.inflate(R.layout.formulario, container, false) as ViewGroup
+		fun save() {
+			Log.i("opa","salvando!!!!!")
+		}
 
-            val act = this.activity as ActIssue;
-            val page_id = arguments?.getInt("page_id")
-            val klass   = arguments?.getString("class")
-            val title   = arguments?.getString("title")
-
-            //val text = page_id.toString() + ". " + title
-            //rootView.section_label.text = text//getString(R.string.section_format, arguments?.getInt(ARG_SECTION_NUMBER))
-
-
-            val lbl_title = TextView(act)
-            lbl_title.text = page_id.toString() + ". " + title
-            //lbl_title.setPadding(0,0,0,0)
-            val edit_answer = EditText( act )
-
-
-            val ll = LinearLayout( act )
-            ll.setPadding(10,10,10,10)
-            ll.orientation = LinearLayout.VERTICAL
-
-            ll.addView(lbl_title)
-            ll.addView(edit_answer)
-            rootView.addView(ll)
-
-            return rootView
-
-
-        }
-
-
-
+		/*public CharSequence getPageTitle(int position) {
+        	return "Page " + position;
+        }*/
+	}
 
 
-        companion object {
-            /**
-             * The fragment argument representing the section number for this
-             * fragment.
-             */
-            private val ARG_SECTION_NUMBER = "section_number"
+	abstract class Issue(var issue_id:Int, var form:LinkedHashMap<String,Any>) : Fragment() {
+		var klass     = ""
+		var title     = ""
+		var is_started = false
+		lateinit var v_root:ViewGroup
+		//lateinit var v_title:TextView
 
-            /**
-             * Returns a new instance of this fragment for the given section
-             * number.
-             */
-            fun newInstance(sectionNumber: Int): PlaceholderFragment {
-                val fragment = PlaceholderFragment()
-                val args = Bundle()
-                args.putInt(ARG_SECTION_NUMBER, sectionNumber)
-                fragment.arguments = args
-                return fragment
-            }
-        }
-    }
+
+		init {
+			//this.issue_id  = arguments?.getInt("id")  ?: 0
+			//val fm         = getFragmentManager() as SectionsPagerAdapter
+			//this.form      = fm.getQuestion( this.issue_id )
+			this.klass   = this.form["class"].toString().toLowerCase()
+			this.title   = this.form["title"].toString()
+		}
+
+		open fun getAnswer():String {
+			return ""
+		}
+
+		override fun onSaveInstanceState(outState: Bundle) {
+			super.onSaveInstanceState(outState)
+			var answer = this.getAnswer()
+			outState.putString( "value", answer )
+		}
+
+
+	}
+
+
+
+	class IssueText(issue_id:Int, form:LinkedHashMap<String,Any>) : Issue(issue_id, form) {
+		lateinit var v_input:EditText
+
+
+		override fun onCreateView(
+			inflater: LayoutInflater, container: ViewGroup?, save: Bundle?
+		): View? {
+			val rootView = inflater.inflate(R.layout.issue_text, container, false) as ViewGroup
+			val v_title:TextView = rootView.findViewById(R.id.title);
+			v_title.text = this.id.toString() + ". " + title
+
+			this.v_input = rootView.findViewById(R.id.input);
+			if ( this.klass == "int" ){
+				this.v_input?.setInputType(InputType.TYPE_CLASS_NUMBER)
+			} else if ( this.klass == "date" ){
+				this.v_input?.setInputType(InputType.TYPE_CLASS_DATETIME)
+			} else if ( this.klass == "phone" ){
+				this.v_input?.setInputType(InputType.TYPE_CLASS_PHONE)
+			} else if ( this.klass == "email" ){
+				this.v_input?.setInputType(InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS)
+			}
+
+			return rootView
+		}
+
+		override fun getAnswer():String {
+			return this.v_input.text.toString()
+		}
+	}
+
+
+
+
+
+	class IssueBool(issue_id:Int, form:LinkedHashMap<String,Any>) : Issue(issue_id, form) {
+
+		override fun onCreateView(
+			inflater: LayoutInflater, container: ViewGroup?,
+			savedInstanceState: Bundle?
+		): View? {
+			val rootView = inflater.inflate(R.layout.issue_bool, container, false) as ViewGroup
+			val v_title:TextView = rootView.findViewById(R.id.title);
+			v_title.text = this.issue_id.toString() + ". " + title
+			return rootView
+		}
+
+		override fun getAnswer():String {
+			return "enun"
+		}
+	}
+
+
+
+	class IssueEnum(issue_id:Int, form:LinkedHashMap<String,Any>) : Issue(issue_id, form) {
+		var answer = ArrayList<RadioButton>()
+
+		override fun onCreateView(
+			inflater: LayoutInflater, container: ViewGroup?, save: Bundle?
+		): View? {
+			if ( this.is_started == true ){
+				return this.v_root
+			}
+
+			this.v_root = inflater.inflate(R.layout.issue_enum, container, false) as ViewGroup
+			val v_title:TextView   = this.v_root.findViewById(R.id.title);
+			val v_group:RadioGroup = this.v_root.findViewById(R.id.radiogroup);
+
+			val box = this.form["box"] as ArrayList<Any>
+			for (_item in box){
+				val item = _item as LinkedHashMap<String,Any>
+				val radio = RadioButton( getActivity() );
+				radio.setText( item["title"].toString() );
+				answer.add(radio)
+				v_group.addView(radio);
+			}
+
+			v_title.text = this.issue_id.toString() + ". " + title
+
+			this.is_started = true
+			return this.v_root
+		}
+
+		override fun getAnswer():String {
+			return "enun"
+		}
+	}
+
+
+
+	class IssueCheckbox(issue_id:Int, form:LinkedHashMap<String,Any>) : Issue(issue_id, form) {
+		lateinit var rootView:ViewGroup
+		//lateinit var v_title:TextView
+		var answer = ArrayList<CheckBox>()
+
+		override fun onCreateView(
+			inflater: LayoutInflater, container: ViewGroup?, save: Bundle?
+		): View? {
+			if ( this.is_started == true ){
+				return this.rootView
+			}
+
+			this.rootView = inflater.inflate(R.layout.issue_checkbox, container, false) as ViewGroup
+
+			val v_title  = rootView.findViewById(R.id.title) as TextView;
+			v_title.text = issue_id.toString() + ". " + title
+
+			val v_group:LinearLayout = rootView?.findViewById(R.id.group)
+			val box = this.form["box"] as ArrayList<Any>
+			for (_item in box){
+				val item = _item as LinkedHashMap<String,Any>
+				val check = CheckBox( getActivity() );
+				check.setText( item["title"].toString() );
+				answer.add(check)
+				v_group.addView(check);
+			}
+			this.is_started = true
+
+			return this.rootView
+		}
+
+
+		override fun getAnswer():String {
+			return "checkbox"
+		}
+	}
+
+
+
+	class IssueError(issue_id:Int, form:LinkedHashMap<String,Any>) : Issue(issue_id, form) {
+
+		override fun onCreateView(
+			inflater: LayoutInflater, container: ViewGroup?, save: Bundle?
+		): View? {
+			val rootView = inflater.inflate(R.layout.issue_error, container, false) as ViewGroup
+			val v_title:TextView = rootView.findViewById(R.id.title);
+			v_title.text = this.id.toString() + ". " + title
+			return rootView
+		}
+
+	}
+
 }
+
+
+
+
+
+/*companion object {
+	private val ARG_SECTION_NUMBER = "section_number"
+	fun newInstance(sectionNumber: Int): Issue {
+		val fragment = IssueText()
+		val args = Bundle()
+		args.putInt(ARG_SECTION_NUMBER, sectionNumber)
+		fragment.arguments = args
+		return fragment
+	}
+}*/

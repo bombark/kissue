@@ -3,7 +3,7 @@
       xmlns:tools="http://schemas.android.com/tools"
       tools:context="br.bombark.kissue.ActIssue">
     <item android:id="@+id/action_settings"
-          android:title="@string/action_settings"
+          android:title="Cancelar Pesquisa"
           android:orderInCategory="100"
           app:showAsAction="never"/>
 </menu>
