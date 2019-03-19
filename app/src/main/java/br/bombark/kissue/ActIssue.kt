@@ -14,8 +14,6 @@ import android.view.View
 import android.view.ViewGroup
 
 import kotlinx.android.synthetic.main.act_issue.*
-import java.io.File
-import org.yaml.snakeyaml.Yaml
 import android.widget.EditText
 import android.widget.TextView
 import android.text.InputType
@@ -25,20 +23,16 @@ import android.widget.CheckBox
 import android.widget.LinearLayout
 import android.content.res.AssetManager
 
-
 import java.io.IOException
 import java.io.StringReader
 import java.io.InputStream
 import java.io.ByteArrayInputStream
+import java.util.Date;
+import java.util.Calendar;
+import java.text.SimpleDateFormat;
 
+import org.yaml.snakeyaml.Yaml
 
-
-import org.xmlpull.v1.XmlPullParser;
-import org.xmlpull.v1.XmlPullParserException;
-import org.xmlpull.v1.XmlPullParserFactory;
-
-import java.math.BigInteger
-import java.security.MessageDigest
 
 
 
@@ -68,6 +62,7 @@ class ActIssue : AppCompatActivity() {
 			if ( this.section.check() )
 				this.section.save()
 			//Snackbar.make(view, "Obrigado!", Snackbar.LENGTH_LONG).setAction("Action", null).show()
+			this.finish()
 		}
 
 	}
@@ -107,8 +102,7 @@ class ActIssue : AppCompatActivity() {
 			val yaml = Yaml()
 			this.form = yaml.load(raw)
 
-			this.form_md5 = calcMd5(raw)
-			Log.i("opa",this.form_md5)
+			this.form_md5 = FsDatabase().calcMd5(raw)
 
 			for (i in 0..this.form.size){
 				issuepkg.add(null)
@@ -157,43 +151,49 @@ class ActIssue : AppCompatActivity() {
 		}
 
 		fun getQuestion(i:Int) : LinkedHashMap<String,Any> {
-			return this.form[i] as LinkedHashMap<String,Any>
+			if ( this.form[i] is LinkedHashMap<*,*> ){
+				return this.form[i] as LinkedHashMap<String,Any>
+			}
+			throw Exception("Esperado um Dicionario")
 		}
 
 		fun check() : Boolean {
-			Log.i("opa", this.issuepkg.size.toString())
 			for ( issue in this.issuepkg ){
 				val answer = issue?.getAnswer() ?: ""
-				Log.i("opa", answer)
 			}
-			Log.i("opa","fim")
 			return true
 		}
 
 		fun getAnswer() : String {
 			var res = ""
-			var is_first = true
 			for ( issue in this.issuepkg ){
-				val answer = issue?.getAnswer() ?: ""
-				if ( is_first ){
-					is_first = false
-				} else {
-					res += ';'
-				}
-				res += answer
+				res += issue?.getAnswer() ?: ""
+				res += ';'
+			}
+			return res
+		}
+
+		fun getHeader() : String {
+			var res = "_coleta_;"
+			for ( i in 0..this.form.size-1 ){
+				val item = this.getQuestion(i)
+				res += item["title"].toString()
+				res += ';'
 			}
 			return res
 		}
 
 		fun save() {
-			val linha = this.getAnswer()
-			Log.i("opa",linha)
-			Log.i("opa","salvando!!!!!")
-
-			val results = File("/sdcard/br.fgbombardelli.ktissue/results")
-			results.mkdirs()
-
-			File(results, "form-"+this.form_md5+".csv" ).appendText(linha)
+			val db = FsDatabase()
+			if ( db.existsResult(this.form_md5) ){
+				val header = this.getHeader()
+				db.addLine(this.form_md5, header)
+			}
+			val sdf = SimpleDateFormat("yyyy/M/dd-HH:mm:ss")
+ 			var linha = ""
+			linha += sdf.format(Date()) + ";"
+			linha += this.getAnswer()
+			db.addLine(this.form_md5, linha)
 		}
 
 		/*public CharSequence getPageTitle(int position) {
@@ -205,6 +205,7 @@ class ActIssue : AppCompatActivity() {
 	abstract class Issue(var issue_id:Int, var form:LinkedHashMap<String,Any>) : Fragment() {
 		var klass     = ""
 		var title     = ""
+		var num_title = ""
 		var is_started = false
 		lateinit var v_root:ViewGroup
 		//lateinit var v_title:TextView
@@ -214,13 +215,27 @@ class ActIssue : AppCompatActivity() {
 			//this.issue_id  = arguments?.getInt("id")  ?: 0
 			//val fm         = getFragmentManager() as SectionsPagerAdapter
 			//this.form      = fm.getQuestion( this.issue_id )
-			this.klass   = this.form["class"].toString().toLowerCase()
-			this.title   = this.form["title"].toString()
+			this.klass     = this.form["class"].toString().toLowerCase()
+			this.title     = this.form["title"].toString()
+			this.num_title = (this.issue_id+1).toString() + ". " + title
 		}
 
 		open fun getAnswer():String {
 			return ""
 		}
+
+		fun safeText(text:String) : String {
+			var tmp = text.replace(';',',')
+			tmp = text.replace('"','\'')
+			if ( tmp.contains("\n") ){
+				tmp = "\""+tmp+"\""
+			}
+			return tmp
+		}
+
+		/*fun getTitle():String {
+			return this.title
+		}*/
 
 		override fun onSaveInstanceState(outState: Bundle) {
 			super.onSaveInstanceState(outState)
@@ -240,26 +255,27 @@ class ActIssue : AppCompatActivity() {
 		override fun onCreateView(
 			inflater: LayoutInflater, container: ViewGroup?, save: Bundle?
 		): View? {
-			val rootView = inflater.inflate(R.layout.issue_text, container, false) as ViewGroup
-			val v_title:TextView = rootView.findViewById(R.id.title);
-			v_title.text = this.id.toString() + ". " + title
+			this.v_root = inflater.inflate(R.layout.issue_text, container, false) as ViewGroup
+			val v_title:TextView = this.v_root.findViewById(R.id.title);
+			v_title.text = this.num_title
 
-			this.v_input = rootView.findViewById(R.id.input);
+			this.v_input = this.v_root.findViewById(R.id.input);
 			if ( this.klass == "int" ){
-				this.v_input?.setInputType(InputType.TYPE_CLASS_NUMBER)
+				this.v_input.setInputType(InputType.TYPE_CLASS_NUMBER)
 			} else if ( this.klass == "date" ){
-				this.v_input?.setInputType(InputType.TYPE_CLASS_DATETIME)
+				this.v_input.setInputType(InputType.TYPE_CLASS_DATETIME)
 			} else if ( this.klass == "phone" ){
-				this.v_input?.setInputType(InputType.TYPE_CLASS_PHONE)
+				this.v_input.setInputType(InputType.TYPE_CLASS_PHONE)
 			} else if ( this.klass == "email" ){
-				this.v_input?.setInputType(InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS)
+				this.v_input.setInputType(InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS)
 			}
 
-			return rootView
+			return this.v_root
 		}
 
 		override fun getAnswer():String {
-			return this.v_input.text.toString()
+			var text = this.v_input.text.toString()
+			return this.safeText(text)
 		}
 	}
 
@@ -279,7 +295,7 @@ class ActIssue : AppCompatActivity() {
 
 			this.v_root = inflater.inflate(R.layout.issue_bool, container, false) as ViewGroup
 			val v_title:TextView = this.v_root.findViewById(R.id.title);
-			v_title.text = this.issue_id.toString() + ". " + title
+			v_title.text = this.num_title
 
 			this.is_started = true
 			return this.v_root
@@ -310,18 +326,21 @@ class ActIssue : AppCompatActivity() {
 
 			this.v_root = inflater.inflate(R.layout.issue_enum, container, false) as ViewGroup
 			val v_title:TextView   = this.v_root.findViewById(R.id.title);
-			val v_group:RadioGroup = this.v_root.findViewById(R.id.radiogroup);
+			v_title.text = this.num_title
 
-			val box = this.form["box"] as ArrayList<Any>
-			for (_item in box){
-				val item = _item as LinkedHashMap<String,Any>
-				val radio = RadioButton( getActivity() );
-				radio.setText( item["title"].toString() );
-				answer.add(radio)
-				v_group.addView(radio);
+
+			val v_group:RadioGroup = this.v_root.findViewById(R.id.radiogroup);
+			if ( this.form["box"] is ArrayList<*> ){
+				val box = this.form["box"] as ArrayList<Any>
+				for (_item in box){
+					val item = _item as LinkedHashMap<String,Any>
+					val radio = RadioButton( getActivity() );
+					radio.setText( item["title"].toString() );
+					answer.add(radio)
+					v_group.addView(radio);
+				}
 			}
 
-			v_title.text = this.issue_id.toString() + ". " + title
 
 			this.is_started = true
 			return this.v_root
@@ -330,7 +349,7 @@ class ActIssue : AppCompatActivity() {
 		override fun getAnswer():String {
 			for (radio in this.answer){
 				if ( radio.isChecked() ){
-					return radio.text.toString()
+					return this.safeText( radio.text.toString().toLowerCase() )
 				}
 			}
 			return ""
@@ -340,7 +359,6 @@ class ActIssue : AppCompatActivity() {
 
 
 	class IssueCheckbox(issue_id:Int, form:LinkedHashMap<String,Any>) : Issue(issue_id, form) {
-		lateinit var rootView:ViewGroup
 		//lateinit var v_title:TextView
 		var answer = ArrayList<CheckBox>()
 
@@ -348,26 +366,29 @@ class ActIssue : AppCompatActivity() {
 			inflater: LayoutInflater, container: ViewGroup?, save: Bundle?
 		): View? {
 			if ( this.is_started == true ){
-				return this.rootView
+				return this.v_root
 			}
 
-			this.rootView = inflater.inflate(R.layout.issue_checkbox, container, false) as ViewGroup
+			this.v_root = inflater.inflate(R.layout.issue_checkbox, container, false) as ViewGroup
 
-			val v_title  = rootView.findViewById(R.id.title) as TextView;
-			v_title.text = issue_id.toString() + ". " + title
+			val v_title  = this.v_root.findViewById(R.id.title) as TextView;
+			v_title.text = this.num_title
+			val v_group:LinearLayout = this.v_root.findViewById(R.id.group)
 
-			val v_group:LinearLayout = rootView?.findViewById(R.id.group)
-			val box = this.form["box"] as ArrayList<Any>
-			for (_item in box){
-				val item = _item as LinkedHashMap<String,Any>
-				val check = CheckBox( getActivity() );
-				check.setText( item["title"].toString() );
-				answer.add(check)
-				v_group.addView(check);
+
+			if ( this.form["box"] is ArrayList<*> ){
+				val box = this.form["box"] as ArrayList<Any>
+				for (_item in box){
+					val item = _item as LinkedHashMap<String,Any>
+					val check = CheckBox( getActivity() );
+					check.setText( item["title"].toString() );
+					answer.add(check)
+					v_group.addView(check);
+				}
 			}
+
 			this.is_started = true
-
-			return this.rootView
+			return this.v_root
 		}
 
 
@@ -381,10 +402,10 @@ class ActIssue : AppCompatActivity() {
 					} else {
 						res += ","
 					}
-					res += check.text.toString()
+					res += check.text.toString().toLowerCase()
 				}
 			}
-			return res
+			return this.safeText(res)
 		}
 	}
 
@@ -397,18 +418,12 @@ class ActIssue : AppCompatActivity() {
 		): View? {
 			val rootView = inflater.inflate(R.layout.issue_error, container, false) as ViewGroup
 			val v_title:TextView = rootView.findViewById(R.id.title);
-			v_title.text = this.id.toString() + ". " + title
+			v_title.text = this.num_title
 			return rootView
 		}
 
 	}
 
-
-
-	fun calcMd5(data:String): String {
-		val md = MessageDigest.getInstance("MD5")
-		return BigInteger(1, md.digest(data.toByteArray())).toString(16).padStart(32, '0')
-	}
 }
 
 

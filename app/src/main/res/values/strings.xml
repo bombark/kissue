@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">kissue</string>
+    <string name="app_name">KtIssue</string>
     <string name="title_activity_act_settings">Settings</string>
 
     <!-- Strings related to Settings -->

@@ -1,14 +1,19 @@
 package br.bombark.kissue
 
-import android.support.v7.app.AppCompatActivity
-import android.os.Bundle
-import android.view.View
-import android.content.Intent
 import android.support.v4.content.ContextCompat
-import android.util.Log
-import android.content.pm.PackageManager
-import android.Manifest
 import android.support.v4.app.ActivityCompat
+import android.support.v7.app.AppCompatActivity
+
+import android.util.Log
+import android.os.Bundle
+
+import android.view.View
+import android.view.Menu
+import android.view.MenuItem
+
+import android.Manifest
+import android.content.pm.PackageManager
+import android.content.Intent
 
 
 class ActMain : AppCompatActivity() {
@@ -18,7 +23,26 @@ class ActMain : AppCompatActivity() {
 		setContentView(R.layout.act_main)
 		//setSupportActionBar(toolbar)
 		ask_permission()
+
+		val db = FsDatabase()
+		db.mkdir()
 	}
+
+
+	override fun onCreateOptionsMenu(menu: Menu): Boolean {
+		menuInflater.inflate(R.menu.menu_act_issue, menu)
+		return true
+	}
+
+	override fun onOptionsItemSelected(item: MenuItem): Boolean {
+		val id = item.itemId
+		if (id == R.id.action_settings) {
+			this.finish()
+			return true
+		}
+		return super.onOptionsItemSelected(item)
+	}
+
 
 	fun btn_start_onclick(view: View) {
 		val changePage = Intent(this, ActIssue::class.java)

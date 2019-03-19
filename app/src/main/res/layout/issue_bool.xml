@@ -1,37 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout
+
+<LinearLayout
 	xmlns:android="http://schemas.android.com/apk/res/android"
-	xmlns:tools="http://schemas.android.com/tools"
 	android:layout_width="match_parent"
-	android:layout_height="match_parent">
+	android:layout_height="match_parent"
+	android:paddingLeft="16dp"
+	android:paddingRight="16dp"
+	android:paddingBottom="32dp"
+	android:orientation="vertical" >
 
-	<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	<TextView
+		android:id="@+id/title"
 		android:layout_width="match_parent"
-		android:layout_height="match_parent"
-		android:paddingLeft="16dp"
-		android:paddingRight="16dp"
-		android:orientation="vertical" >
+		android:layout_height="wrap_content"
+		android:text=""
+		android:textSize="24sp" />
 
-		<TextView
-			android:id="@+id/title"
+	<RadioGroup xmlns:android="http://schemas.android.com/apk/res/android"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:orientation="horizontal">
+		<RadioButton android:id="@+id/radio_sim"
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content"
-			android:text=""
-			android:textSize="24sp" />
-
-		<RadioGroup xmlns:android="http://schemas.android.com/apk/res/android"
+			android:text="Sim"/>
+		<RadioButton android:id="@+id/radio_nao"
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content"
-			android:orientation="horizontal">
-			<RadioButton android:id="@+id/radio_sim"
-				android:layout_width="wrap_content"
-				android:layout_height="wrap_content"
-				android:text="Sim"/>
-			<RadioButton android:id="@+id/radio_nao"
-				android:layout_width="wrap_content"
-				android:layout_height="wrap_content"
-				android:text="Não" />
-		</RadioGroup>
+			android:text="Não" />
+	</RadioGroup>
 
-	</LinearLayout>
-</android.support.constraint.ConstraintLayout>
+</LinearLayout>

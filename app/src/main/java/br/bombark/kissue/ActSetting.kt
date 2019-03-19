@@ -10,6 +10,8 @@ import kotlinx.android.synthetic.main.act_setting.*
 import android.content.pm.PackageManager
 import android.Manifest
 import android.view.View
+import android.view.Menu
+import android.view.MenuItem
 
 import java.net.HttpURLConnection
 import java.net.URL
@@ -40,5 +42,20 @@ class ActSetting : AppCompatActivity() {
 		//val url = "http://www.google.com"
 		val connection = URL("http://www.android.com/").openConnection() as HttpURLConnection
 		val data = connection.inputStream.bufferedReader().readText()
+	}
+
+
+	override fun onCreateOptionsMenu(menu: Menu): Boolean {
+		menuInflater.inflate(R.menu.menu_act_issue, menu)
+		return true
+	}
+
+	override fun onOptionsItemSelected(item: MenuItem): Boolean {
+		val id = item.itemId
+		if (id == R.id.action_settings) {
+			this.finish()
+			return true
+		}
+		return super.onOptionsItemSelected(item)
 	}
 }
