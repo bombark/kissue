@@ -31,4 +31,16 @@ class FsDatabase {
 		val md = MessageDigest.getInstance("MD5")
 		return BigInteger(1, md.digest(raw.toByteArray())).toString(16).padStart(32, '0')
 	}
+
+	fun listForms() : ArrayList<String> {
+		var res = ArrayList<String>()
+		File( this.forms_path ).listFiles().forEach {
+			res.add( it.name )
+		}
+		return res
+	}
+
+	fun readFormFromFile(name:String) : ByteArray {
+		return  File(this.forms_path,name).readBytes()
+	}
 }

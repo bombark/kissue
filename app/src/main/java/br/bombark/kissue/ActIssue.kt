@@ -22,6 +22,8 @@ import android.widget.RadioButton
 import android.widget.CheckBox
 import android.widget.LinearLayout
 import android.content.res.AssetManager
+import android.content.Context
+import android.content.SharedPreferences
 
 import java.io.IOException
 import java.io.StringReader
@@ -30,6 +32,7 @@ import java.io.ByteArrayInputStream
 import java.util.Date;
 import java.util.Calendar;
 import java.text.SimpleDateFormat;
+
 
 import org.yaml.snakeyaml.Yaml
 
@@ -52,18 +55,22 @@ class ActIssue : AppCompatActivity() {
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
 		setContentView(R.layout.act_issue)
-
 		setSupportActionBar(toolbar)
-		this.section = SectionsPagerAdapter(supportFragmentManager)
+
+		val sharedPref = this.getSharedPreferences("preferences",Context.MODE_PRIVATE);
+		val form_name  = sharedPref.getString("form_name", "");
+		val format     = sharedPref.getString("text_formatting", "UTF-8");
+
+		this.section = SectionsPagerAdapter(supportFragmentManager,form_name,format)
 		container.adapter = this.section
 
-		fab.setOnClickListener { //view ->
+		/*fab.setOnClickListener { //view ->
 			//this.section.setCurrentItem(0);
 			if ( this.section.check() )
 				this.section.save()
 			//Snackbar.make(view, "Obrigado!", Snackbar.LENGTH_LONG).setAction("Action", null).show()
 			this.finish()
-		}
+		}*/
 
 	}
 
@@ -88,20 +95,28 @@ class ActIssue : AppCompatActivity() {
 	 * A [FragmentPagerAdapter] that returns a fragment corresponding to
 	 * one of the sections/tabs/pages.
 	 */
-	inner class SectionsPagerAdapter(fm: FragmentManager) : FragmentPagerAdapter(fm) {
+	inner class SectionsPagerAdapter(
+		fm: FragmentManager, val form_name:String, val _format:String
+	) : FragmentPagerAdapter(fm) {
 
 		private var form : ArrayList< Any > = ArrayList()
 		private var issuepkg : ArrayList< Issue? > = ArrayList()
 		private var form_md5 = ""
 
 		init {
-			val manager = getAssets();
-			val ims = manager.open("form.yml");
-			val raw = ims.readBytes().toString(Charsets.UTF_8)
-			//var raw = File("/sdcard/form_cini.yml").readBytes().toString(Charsets.UTF_8)
+			val format = if (_format == "UTF-8" ) Charsets.UTF_8 else Charsets.ISO_8859_1
+
+			var raw = ""
+			if ( form_name == "" ){
+				val manager = getAssets();
+				val ims = manager.open("form.yml");
+				raw = ims.readBytes().toString(format)
+			} else {
+				raw = FsDatabase().readFormFromFile(form_name).toString(format)
+			}
+
 			val yaml = Yaml()
 			this.form = yaml.load(raw)
-
 			this.form_md5 = FsDatabase().calcMd5(raw)
 
 			for (i in 0..this.form.size){
@@ -113,6 +128,10 @@ class ActIssue : AppCompatActivity() {
 			//IssueText.newInstance(position + 1)
 			val question = this.getQuestion(id_issue)
 			val klass = question["class"].toString().toLowerCase()
+
+			if ( id_issue == 0 || id_issue == question.size ){
+
+			}
 
 			/*val args1 = Bundle()
 			args1.putInt   ( "id", position )

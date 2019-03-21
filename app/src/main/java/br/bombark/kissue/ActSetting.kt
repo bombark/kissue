@@ -12,18 +12,78 @@ import android.Manifest
 import android.view.View
 import android.view.Menu
 import android.view.MenuItem
+import android.widget.RadioGroup
+import android.widget.RadioButton
+
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.util.Log
 
 import java.net.HttpURLConnection
 import java.net.URL
 
 
+
+
 class ActSetting : AppCompatActivity() {
+	var form_name = ""
+	var text_formatting = ""
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
 		setContentView(R.layout.act_setting)
 		setSupportActionBar(toolbar)
-		ask_permission()
+		//ask_permission()
+
+		val sharedPref = this.getSharedPreferences("preferences",Context.MODE_PRIVATE);
+		this.form_name = sharedPref.getString("form_name", "");
+
+
+		val radiogroup_form = this.findViewById(R.id.radiogroup_forms) as RadioGroup
+		val formpkg = FsDatabase().listForms()
+		for ( form in formpkg ){
+			Log.i("opa","form")
+			var radio = RadioButton(this)
+			radio.text = form
+			if (form == this.form_name ){
+				radio.setChecked(true)
+			}
+			radiogroup_form.addView(radio)
+		}
+
+		radiogroup_form.setOnCheckedChangeListener(
+			RadioGroup.OnCheckedChangeListener { group, checkedId ->
+				val radio:RadioButton = this.findViewById(checkedId)
+				val form = radio.text.toString()
+				val editor = sharedPref.edit();
+				editor.putString("form_name", form);
+				editor.commit();
+			}
+		)
+
+
+
+		this.text_formatting = sharedPref.getString( "text_formatting", "UTF-8" );
+		if ( this.text_formatting == "UTF-8" ){
+			var radio = this.findViewById(R.id.radio_utf) as RadioButton
+			radio.setChecked(true)
+		} else {
+			var radio = this.findViewById(R.id.radio_iso) as RadioButton
+			radio.setChecked(true)
+		}
+		val radiogroup_text = this.findViewById(R.id.radiogroup_text) as RadioGroup
+		radiogroup_text.setOnCheckedChangeListener(
+			RadioGroup.OnCheckedChangeListener { group, checkedId ->
+				val radio:RadioButton = this.findViewById(checkedId)
+				val textformatting = radio.text.toString()
+				val editor     = sharedPref.edit();
+				editor.putString("text_formatting", textformatting);
+				editor.commit();
+			}
+		)
+
+
+
 	}
 
 
